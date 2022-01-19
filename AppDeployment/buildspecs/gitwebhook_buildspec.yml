@@ -1,0 +1,27 @@
+---
+version: 0.2
+env:
+  git-credential-helper: yes
+phases:
+    build:
+      commands:
+          - env TZ=Australia/Sydney
+          # - cd /usr/bin
+          # - curl -O https://releases.hashicorp.com/terraform/0.14.10/terraform_0.14.10_linux_amd64.zip
+          # - unzip terraform_0.14.10_linux_amd64.zip
+          # - echo Run Linter
+          # - curl https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          # - cd $CODEBUILD_SRC_DIR/environments/poc
+          # - echo $'plugin \"aws\" {\n  enabled = true\n  version = \"0.4.1\"\n  source  = \"github.com/terraform-linters/tflint-ruleset-aws\"\n}' > .tflint.hcl
+          # - cat .tflint.hcl
+          # - tflint --init
+          # - ls -ltr
+          # - echo TFLint POC
+          # - tflint --module
+          # - echo TFLint Modules
+          #- TFLINT_LOG=debug tflint environments/poc/
+          #- /action/lib/linter.sh
+          - echo Uploading Repo Artifacts to S3
+artifacts:
+      files:
+          - '**/*'

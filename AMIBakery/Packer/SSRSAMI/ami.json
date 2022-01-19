@@ -1,0 +1,86 @@
+
+{
+    "variables": {
+      "aws_access_key": "",
+      "aws_secret_key": "",
+      "iam_instance_profile": ""
+    },
+  
+    "builders": [
+      {
+        "type": "amazon-ebs",
+        "region": "ap-southeast-2",
+        "instance_type": "t2.large",
+        "vpc_id": "{{ user `vpc_id` }}",
+        "subnet_id": "{{ user `subnet_id` }}",
+        "security_group_id": "{{user `security_group_id`}}",
+        "associate_public_ip_address": "false",
+        "iam_instance_profile": "dependencies-{{ user `environment` }}-app1-ec2-profile",
+        "skip_profile_validation": "true",
+        "launch_block_device_mappings": [
+            {
+             "device_name": "/dev/sda1",
+             "encrypted": true,
+             "kms_key_id": "{{user `kms_key_id`}}",
+             "volume_type": "gp3"
+           }
+        ],
+        "source_ami_filter": {
+          "filters": {
+            "virtualization-type": "hvm",
+            "name": "NSWH_SOEWIN2016_*",
+            "root-device-type": "ebs"
+          },
+          "owners": [
+            "000000000000"
+          ],
+          "most_recent": "true"
+        },
+        "ami_name": "app1-ssrs-AMI-{{timestamp}}-{{ user `versionNumber` }}",
+        "user_data_file": "AMIBakery/Scripts/BootstrapWindows.txt",
+        "communicator": "winrm",
+        "winrm_no_proxy": "true",
+        "winrm_insecure": "true",
+        "winrm_username": "Administrator",
+        "winrm_use_ssl": "true",
+        "winrm_use_ntlm": "true",
+        "winrm_timeout": "15m"
+      }
+    ],
+    "provisioners": [
+      {
+        "type": "powershell",
+        "inline": [
+          "Write-Host \"Bootstrap Complete, Rebooting Packer Image Builder\""
+        ]
+      },
+      {
+        "type": "windows-restart"
+      },
+      {
+        "type": "file",
+        "source": "AMIBakery/Packer/SSRSAMI/LaunchConfig.json",
+        "destination": "C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Config\\LaunchConfig.json"
+      },
+      {
+        "type": "powershell",
+        "script": "APP1scripts/SQLInstall.ps1",
+        "elevated_user": "Administrator",
+        "elevated_password": "{{.WinRMPassword}}",
+        "environment_vars": [
+          "versionNumber={{ user `versionNumber` }}","bucketname={{ user `artifact_bucket` }}","environment={{ user `environment` }}","secret_id={{ user `secret_id` }}"
+        ]
+      },
+      {
+        "type": "windows-restart"
+      },    
+      {
+        "type": "powershell",
+        "inline": [
+          "C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeInstance.ps1 -Schedule",
+          "C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\SysprepInstance.ps1 -NoShutdown"
+        ]
+      }
+    ]
+  }
+  

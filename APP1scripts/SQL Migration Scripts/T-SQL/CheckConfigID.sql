@@ -1,0 +1,1 @@
+select id,Configid,ConfigValue from ConfigurationData where ConfigValue like 'APP1%'

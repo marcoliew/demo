@@ -1,0 +1,36 @@
+version: 0.2
+env:
+  variables:
+    HTTP_PROXY: infraproxy-ap2.aws.health.nsw.gov.au:3128
+    HTTPS_PROXY: infraproxy-ap2.aws.health.nsw.gov.au:3128
+    NO_PROXY: "169.254.169.250,169.254.169.251,169.254.169.254,iam.amazonaws.com,sts.amazonaws.com,sts.ap-southeast-2.amazonaws.com,.ap-southeast-2.amazonaws.com,s3.ap-southeast-2.amazonaws.com,amazonaws.com,secretsmanager.ap-southeast-2.amazonaws.com,localhost"
+  git-credential-helper: yes
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+    commands:
+      - curl -qL 169.254.170.2/$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI > credentials.json
+      - mkdir -p ~/.aws
+      - echo "[default]" > ~/.aws/credentials
+      - echo "aws_access_key_id = $(cat credentials.json | jq '.AccessKeyId' | sed s'/"//g')" >> ~/.aws/credentials
+      - echo "aws_secret_access_key = $(cat credentials.json | jq '.SecretAccessKey' | sed s'/"//g')" >> ~/.aws/credentials
+      - echo "aws_session_token = $(cat credentials.json | jq '.Token' | sed s'/"//g')" >> ~/.aws/credentials
+      - aws s3 cp s3://$Environment-dependencies-app1-artifacts-bucket/NSWHEALTH-RootCA.crt /etc/pki/ca-trust/source/anchors/NSWHEALTH-RootCA.crt && update-ca-trust
+      - env TZ=Australia/Sydney
+      - aws s3 cp s3://$Environment-dependencies-app1-artifacts-bucket/packer_1.7.4_linux_amd64.zip . --region ap-southeast-2
+      - unzip packer_1.7.4_linux_amd64.zip -d /usr/local/bin
+  build:
+    commands:
+      - packer build -var-file="Environments/$Environment/$lhd/Packer/$deployment_role/variables.pkvars.hcl" -var "security_group_id=$codebuild_security_group" AMIBakery/Packer/$deployment_role/ami.json -machine-readable | tee build.log
+  post_build:
+    commands:
+      - /bin/bash AMIBakery/Scripts/post_build.sh $AWS_REGION $Environment $app $lhd
+      #- /bin/bash AMIBakery/Scripts/clean_up_packer.sh
+artifacts:
+  files:
+  #  - '**/*'
+    - build.log 
+    - manifest.json
+  name: myname-$(date +%Y-%m-%d) 
+  discard-paths: yes

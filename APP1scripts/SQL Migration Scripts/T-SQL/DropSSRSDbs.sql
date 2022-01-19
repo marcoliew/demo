@@ -1,0 +1,1 @@
+exec msdb.dbo.rds_drop_ssrs_databases

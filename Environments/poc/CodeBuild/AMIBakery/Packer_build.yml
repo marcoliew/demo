@@ -1,0 +1,21 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+    commands:
+      - /bin/bash Environments/poc/CodeBuild/AMIBakery/Scripts/install_packer.sh 1.5.4
+  build:
+    commands:
+      - /bin/bash Environments/poc/CodeBuild/AMIBakery/Scripts/build_packer_ami.sh
+  post_build:
+    commands:
+      - /bin/bash Environments/poc/CodeBuild/AMIBakery/Scripts/post_build.sh $AWS_REGION
+  #     - /bin/bash AMIBakery/Scripts/clean_up_packer.sh
+artifacts:
+  files:
+  #  - '**/*'
+    - build.log 
+    - manifest.json
+  name: myname-$(date +%Y-%m-%d) 
+  discard-paths: yes

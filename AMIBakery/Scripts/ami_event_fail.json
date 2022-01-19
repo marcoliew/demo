@@ -1,0 +1,8 @@
+[
+        {
+            "Source": "app1.ami.codebuild",
+            "DetailType": "AmiBuilder",
+            "Detail": "{ \"AmiStatus\": \"Failed\"}",
+            "Resources": [ "Null" ]
+        }
+]
